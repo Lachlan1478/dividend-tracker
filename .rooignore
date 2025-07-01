@@ -1,0 +1,6 @@
+# .rooignore
+venv/
+__pycache__/
+*.db
+*.csv
+.streamlit/
