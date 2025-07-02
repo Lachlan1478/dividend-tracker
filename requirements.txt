@@ -3,3 +3,4 @@ uvicorn
 streamlit
 pandas
 yfinance
+numpy

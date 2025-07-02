@@ -1,6 +1,6 @@
 import sqlite3
 
-DB_NAME = "dividends.db"
+DB_NAME = "holdings.db"
 
 def get_connection():
     return sqlite3.connect(DB_NAME)
@@ -14,12 +14,21 @@ def create_tables():
     CREATE TABLE IF NOT EXISTS holdings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         ticker TEXT NOT NULL,
-        shares INTEGER NOT NULL,
-        ex_dividend_date TEXT,
-        record_date TEXT,
-        payment_date TEXT,
-        dividend_amount REAL,
-        franking_percent REAL           
+        shares INTEGER         
+    )
+    """)
+
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS dividends (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        holding_id INTEGER NOT NULL,
+        ex_dividend_date TEXT NOT NULL,
+        record_date TEXT NOT NULL,
+        payment_date TEXT NOT NULL,
+        dividend_amount REAL NOT NULL,
+        franking_percent REAL NOT NULL,
+        FOREIGN KEY (holding_id) REFERENCES holdings (id)
     )
     """)
 
