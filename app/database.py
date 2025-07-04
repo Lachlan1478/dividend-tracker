@@ -27,7 +27,7 @@ def create_tables():
         record_date TEXT NOT NULL,
         payment_date TEXT NOT NULL,
         dividend_amount REAL NOT NULL,
-        franking_percent REAL NOT NULL,
+        franking_percent REAL,
         FOREIGN KEY (holding_id) REFERENCES holdings (id)
     )
     """)
