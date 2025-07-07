@@ -16,7 +16,7 @@
 3. **Start the Program:**
    - In the terminal, type:
      ```
-     uvicorn app.main:app --reload
+     python -m uvicorn app.main:app --reload
      ```
    - Open your web browser and go to `http://localhost:8000` to see the program.
    - For front end, type:
@@ -26,6 +26,7 @@
      
 
 ## Closing the Program
+
 
 1. **Stop the Program:**
    - In the terminal, press `Ctrl + C` to stop the program.

@@ -1,8 +1,10 @@
 from fastapi import FastAPI, HTTPException, Path
+import yfinance as yf
+import pandas as pd
 from pydantic import BaseModel
 from app.models import DividendCreate
 from app.database import create_tables, get_connection
-
+from app.get_dividend_info import get_next_dividend
 
 # ================================================== #
 #  1.0 Start up 
@@ -83,6 +85,29 @@ def get_dividends():
     conn = get_connection()
     cursor = conn.cursor()
 
+    # --- Sync logic ---
+    cursor.execute("SELECT id FROM holdings")
+    holding_ids = set(row[0] for row in cursor.fetchall())
+
+    cursor.execute("SELECT DISTINCT holding_id FROM dividends")
+    dividend_ids = set(row[0] for row in cursor.fetchall())
+
+    # Add missing dividend rows
+    for hid in holding_ids - dividend_ids:
+        cursor.execute("""
+            INSERT INTO dividends (
+                holding_id, ex_dividend_date, record_date, payment_date,
+                dividend_amount, franking_percent
+            ) VALUES (?, '', '', '', 0.0, 0.0)
+        """, (hid,))
+
+    # Remove dividend rows with no matching holding
+    for did in dividend_ids - holding_ids:
+        cursor.execute("DELETE FROM dividends WHERE holding_id = ?", (did,))
+
+    conn.commit()
+
+    # --- Fetch joined data ---
     cursor.execute("""
         SELECT
             h.id AS holding_id,
@@ -102,9 +127,9 @@ def get_dividends():
     rows = cursor.fetchall()
     conn.close()
 
-    # Format for frontend
     keys = ["holding_id", "ticker", "shares", "ex_dividend_date", "record_date", "payment_date", "dividend_amount", "franking_percent", "total_income"]
     return [dict(zip(keys, row)) for row in rows]
+
 
 @app.post("/dividends")
 def add_dividend(dividend: DividendCreate):
@@ -135,3 +160,10 @@ def add_dividend(dividend: DividendCreate):
     conn.commit()
     conn.close()
     return {"message": "Dividend added successfully"}
+
+@app.get("/dividends/fetch/{ticker}")
+def fetch_dividend_info(ticker: str):
+    data = get_next_dividend(ticker)
+    if data:
+        return data
+    raise HTTPException(status_code=404, detail="Dividend info not found.")

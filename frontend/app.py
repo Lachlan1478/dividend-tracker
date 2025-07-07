@@ -36,6 +36,15 @@ try:
     if response.status_code == 200:
         holdings = response.json()
         if holdings:
+            # Column headers
+            col1, col2, col3 = st.columns([3, 2, 1])
+            with col1:
+                st.markdown("**Ticker**")
+            with col2:
+                st.markdown("**Shares**")
+            with col3:
+                st.markdown("**Remove**")
+
             for holding in holdings:
                 col1, col2, col3 = st.columns([3, 2, 1]) # This is the column widths
                 with col1:
@@ -59,8 +68,14 @@ except requests.exceptions.ConnectionError:
     st.error("❌ Could not connect to the backend API.")
 
 
+
 # --- Display Dividends via API ---
 st.subheader("💰 Upcoming Dividends")
+
+# --- Manual Refresh Button ---
+if st.button("🔄 Refresh Dividends"):
+    st.rerun()
+
 # Get dividend data from API
 try:
     st.write("Fetching dividends...")
