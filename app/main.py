@@ -94,12 +94,35 @@ def get_dividends():
 
     # Add missing dividend rows
     for hid in holding_ids - dividend_ids:
-        cursor.execute("""
-            INSERT INTO dividends (
-                holding_id, ex_dividend_date, record_date, payment_date,
-                dividend_amount, franking_percent
-            ) VALUES (?, '', '', '', 0.0, 0.0)
-        """, (hid,))
+        # Get the ticker for this holding_id
+        cursor.execute("SELECT ticker FROM holdings WHERE id = ?", (hid,))
+        result = cursor.fetchone()
+        if result:
+            ticker = result[0]
+            dividend_data = get_next_dividend(ticker)
+
+            if dividend_data:
+                cursor.execute("""
+                    INSERT INTO dividends (
+                        holding_id, ex_dividend_date, record_date, payment_date,
+                        dividend_amount, franking_percent
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                """, (
+                    hid,
+                    dividend_data.get("ex_dividend_date", ""),
+                    dividend_data.get("record_date", ""),
+                    dividend_data.get("payment_date", ""),
+                    dividend_data.get("dividend_amount", 0.0),
+                    dividend_data.get("franking_percent", 0.0)
+                ))
+            else:
+                # Optional: fallback insert if no data is available
+                cursor.execute("""
+                    INSERT INTO dividends (
+                        holding_id, ex_dividend_date, record_date, payment_date,
+                        dividend_amount, franking_percent
+                    ) VALUES (?, '', '', '', 0.0, 0.0)
+                """, (hid,))
 
     # Remove dividend rows with no matching holding
     for did in dividend_ids - holding_ids:
@@ -160,6 +183,44 @@ def add_dividend(dividend: DividendCreate):
     conn.commit()
     conn.close()
     return {"message": "Dividend added successfully"}
+
+@app.post("/dividends/refresh")
+def refresh_all_dividends():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Get all holdings (id + ticker)
+    cursor.execute("SELECT id, ticker FROM holdings")
+    holdings = cursor.fetchall()
+
+    updated = 0
+    for hid, ticker in holdings:
+        dividend_data = get_next_dividend(ticker)
+        if dividend_data:
+            cursor.execute("""
+                UPDATE dividends
+                SET
+                    ex_dividend_date = ?,
+                    record_date = ?,
+                    payment_date = ?,
+                    dividend_amount = ?,
+                    franking_percent = ?
+                WHERE holding_id = ?
+            """, (
+                dividend_data.get("ex_dividend_date", ""),
+                dividend_data.get("record_date", ""),
+                dividend_data.get("payment_date", ""),
+                dividend_data.get("dividend_amount", 0.0),
+                dividend_data.get("franking_percent", 0.0),
+                hid
+            ))
+            updated += 1
+
+    conn.commit()
+    conn.close()
+
+    return {"message": f"Refreshed dividend data for {updated} holdings."}
+
 
 @app.get("/dividends/fetch/{ticker}")
 def fetch_dividend_info(ticker: str):

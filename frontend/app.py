@@ -96,3 +96,14 @@ try:
         st.error("Error loading dividends.")
 except requests.exceptions.ConnectionError:
     st.error("❌ Could not connect to the backend API.")
+
+if st.button("🔄 Refresh Dividend Data from YFinance"):
+    try:
+        refresh = requests.post(f"{API_URL}/dividends/refresh")
+        if refresh.status_code == 200:
+            st.success(refresh.json()["message"])
+            st.rerun()
+        else:
+            st.error("Failed to refresh dividend data.")
+    except Exception as e:
+        st.error(f"Error refreshing dividends: {e}")
