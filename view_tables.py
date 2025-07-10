@@ -1,5 +1,6 @@
 import sqlite3
-from app.get_dividend_info import get_next_dividend    
+from app.get_dividend_info import get_next_dividend  
+from app.get_dividend_info import fetch_franking_percent     
 
 def view_tables():
     # Connect to the database
@@ -28,6 +29,7 @@ def view_tables():
     conn.close()
 
 if __name__ == "__main__":
-    view_tables()
+    # view_tables()
 
-    print(get_next_dividend(ticker = "CBA"))  # Example ticker, replace with actual ticker
+    print(fetch_franking_percent(ticker = "CBA"))  # Example ticker, replace with actual ticker
+    
